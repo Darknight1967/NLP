@@ -1,0 +1,195 @@
+====================================================================
+Exp 1 : to implement bottom up shift reduce parser.
+--------------------------------------------------------------------
+
+# Grammar rules
+grammar = [("3E3", "E"), ("2E2", "E"), ("4", "E")]
+
+def shift_reduce_parser(input_string):
+    stack = ['$']  # Stack starts with $
+    input_list = list(input_string) + ['$']  # Add end marker to input
+    
+    print(f"{'Stack':<20} {'Input':<20} {'Action'}")
+    print("-" * 60)
+    
+    while True:
+        # Display the current state of stack and input
+        print(f"{''.join(stack):<20} {''.join(input_list):<20}", end="")
+        
+        # Attempt reduction
+        for rule_rhs, rule_lhs in grammar:
+            if ''.join(stack).endswith(rule_rhs):
+                stack = stack[:-len(rule_rhs)] + [rule_lhs]  # Perform reduction
+                print(f"Reduce: {rule_rhs} → {rule_lhs}")
+                break
+        else:
+            # No reduction possible; attempt shift or decide result
+            if input_list == ['$'] and stack == ['$', 'E']:
+                print("Accept")
+                break
+            elif input_list == ['$']:
+                print("Reject")
+                break
+            stack.append(input_list.pop(0))  # Shift next input symbol
+            print("Shift")
+
+# Test the parser
+input_string = "32423"
+print("\nParsing input string:", input_string)
+shift_reduce_parser(input_string)
+
+
+
+
+====================================================================
+Exp 4 : Study of any one clustering algorithm in NLP
+---------------------------------------------------------------------
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.cluster import DBSCAN
+import numpy as np
+
+# Sample documents
+documents = [
+    "The cat sat on the mat.",
+    "The dog barked at the cat.",
+    "The quick brown fox jumps over the lazy dog.",
+    "The cat and the dog are friends.",
+    "The fox is quick and the dog is lazy.",
+    "The stock market is going up.",
+    "Investments are risky but rewarding.",
+    "Economic trends show growth this year."
+]
+
+# Convert documents to TF-IDF features
+vectorizer = TfidfVectorizer(stop_words='english')
+X = vectorizer.fit_transform(documents)
+
+# Reduce dimensionality with TruncatedSVD
+svd = TruncatedSVD(n_components=4)  # Adjust the number of components as needed
+X_reduced = svd.fit_transform(X)
+
+# Perform DBSCAN clustering on reduced data
+dbscan_svd = DBSCAN(eps=0.7, min_samples=1, metric='euclidean')  # Using 'euclidean' since the data is reduced
+labels_svd = dbscan_svd.fit_predict(X_reduced)
+
+# Print cluster assignments
+print("\nDBSCAN After Dimensionality Reduction with TruncatedSVD:")
+for i, label in enumerate(labels_svd):
+    print(f"Document {i} is in cluster {label}")
+
+
+
+===========================================================================
+Exp 6 : Application of the viterbi algorithm in parts of speech tagging
+--------------------------------------------------------------------------
+
+import numpy as np
+
+# Define states, observations, transition, emission, and initial probabilities
+states = ['Noun', 'Verb', 'Adj']
+observations = ['The', 'cat', 'sat', 'on', 'the', 'mat']
+init_probs = {'Noun': 0.4, 'Verb': 0.3, 'Adj': 0.3}
+trans_probs = {('Noun', 'Noun'): 0.3, ('Noun', 'Verb'): 0.4, ('Noun', 'Adj'): 0.3,
+               ('Verb', 'Noun'): 0.2, ('Verb', 'Verb'): 0.2, ('Verb', 'Adj'): 0.6,
+               ('Adj', 'Noun'): 0.3, ('Adj', 'Verb'): 0.4, ('Adj', 'Adj'): 0.3}
+emit_probs = {('Noun', 'The'): 0.4, ('Noun', 'cat'): 0.5, ('Noun', 'mat'): 0.5,
+              ('Verb', 'sat'): 0.6, ('Adj', 'on'): 0.4, ('Adj', 'the'): 0.4}
+
+def viterbi(obs, states, init_probs, trans_probs, emit_probs):
+    # Initialize matrices for Viterbi and backpointer
+    V = np.zeros((len(states), len(obs)))
+    backpointer = np.zeros((len(states), len(obs)), dtype=int)
+    
+    # Initialization step (t=0)
+    for s, state in enumerate(states):
+        V[s, 0] = init_probs[state] * emit_probs.get((state, obs[0]), 0.0001)
+    
+    # Recursion step
+    for t in range(1, len(obs)):
+        for s, state in enumerate(states):
+            probs = [V[prev_s, t-1] * trans_probs.get((states[prev_s], state), 0.0001) *
+                     emit_probs.get((state, obs[t]), 0.0001) for prev_s in range(len(states))]
+            V[s, t], backpointer[s, t] = max((prob, idx) for idx, prob in enumerate(probs))
+    
+    # Backtrack to find the best path
+    best_path = [np.argmax(V[:, -1])]
+    for t in range(len(obs) - 1, 0, -1):
+        best_path.insert(0, backpointer[best_path[0], t])
+    
+    # Convert state indices to state names
+    return [states[i] for i in best_path]
+
+# Run the algorithm and output results
+best_path_states = viterbi(observations, states, init_probs, trans_probs, emit_probs)
+print("Observations:", observations)
+print("Most probable sequence of POS tags:", best_path_states)
+
+# Print aligned results
+print("\nAligned results:")
+for obs, state in zip(observations, best_path_states):
+    print(f"{obs:10} -> {state}")
+
+
+
+
+=================================================================================
+Exp 7 : Study and implementation of Python features used in NLP ( any 3 )
+-----------------------------------------------------------------------------
+
+import re
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+text = "Hello, world! Welcome to NLP. Let's clean this text, shall we? 1234."
+
+cleaned_text = re.sub(r'[^a-zA-Z\s]', '', text)  # Keep only alphabets and spaces
+print("Cleaned Text:", cleaned_text)
+
+tokens = word_tokenize(cleaned_text)
+print("\nTokens:", tokens)
+
+stop_words = set(stopwords.words('english'))
+filtered_tokens = [word for word in tokens if word.lower() not in stop_words]
+print("\nFiltered Tokens (No Stopwords):", filtered_tokens)
+
+lemmatizer = WordNetLemmatizer()
+lemmatized_tokens = [lemmatizer.lemmatize(word) for word in filtered_tokens]
+print("\nLemmatized Tokens:", lemmatized_tokens)
+
+
+
+
+==================================================================================================================
+Exp 10 : To calculate the frequency distribution of words in a text corpus by counting the occurence of each word.
+--------------------------------------------------------------------------------------------------------------------
+
+import nltk
+from nltk.probability import FreqDist
+import matplotlib.pyplot as plt
+
+nltk.download('punkt')
+
+text = "I could make fudge with chocolate chips, condensed milk, and vanilla. I tried it with dark and semi-sweet chocolate, better with both. Best add-ins: crushed almonds and marshmallows."
+
+# Tokenize and calculate frequency distribution
+tokens = nltk.word_tokenize(text)
+fdist = FreqDist(tokens)
+
+# Print frequency distribution (filtered out common stopwords)
+print({word: fdist[word] for word in fdist if len(word) > 1})
+
+# Plot the frequency distribution
+fdist.plot(30, cumulative=False)
+plt.show()
+
+
+
+
